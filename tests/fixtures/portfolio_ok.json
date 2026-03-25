@@ -1,0 +1,179 @@
+{
+    "status": {
+        "code": "0",
+        "text": "OK!"
+    },
+    "portfel": {
+        "benchName": "WIG",
+        "tickersCount": 3,
+        "tickerClear": "Portfolio in total",
+        "nazwa": "Portfolio in total",
+        "waluta": "PLN",
+        "data": "&nbsp;",
+        "close": 147.28,
+        "zmianaDzienna": -0.83,
+        "liczbaJednostek": 1000.0,
+        "typ": "-",
+        "typOrg": "-",
+        "wartosc": "250000.00",
+        "udzial": 100,
+        "zmiana": 12.50,
+        "zysk": 27500.00,
+        "kontoInvName": "",
+        "sektor": "",
+        "zyskDzienny": -2075.00,
+        "grupowanieKonto": "1",
+        "grupowanieSektor": "0",
+        "grupowanieWalor": "0",
+        "grupowanieRyzyko": "0",
+        "grupowaniePortfel": "0",
+        "zmianaW": "-2.10",
+        "zmiana2W": "-2.35",
+        "zmianaM": "-2.55",
+        "zmiana3M": "+1.15",
+        "zmiana6M": "+4.10",
+        "zmianaR": "+12.20",
+        "zmiana3R": "+23.40",
+        "zmiana5R": "+16.55",
+        "zmianaMdD": "-2.85",
+        "zmianaRdD": "+1.15"
+    },
+    "tickers": {
+        "1": {
+            "tickerClear": "NASDAQ_AAPL",
+            "nazwa": "Apple Inc. (AAPL)",
+            "data": "2024-03-22",
+            "close": "850.00",
+            "zmianaDzienna": "1.25",
+            "liczbaJednostek": "100",
+            "typ": "NASDAQ shares",
+            "typOrg": "Akcje NASDAQ",
+            "wartosc": "85000.00",
+            "udzial": "34.00",
+            "zmiana": "2.10",
+            "cenaZakupu": "832.00",
+            "zysk": "1800.00",
+            "kontoInvName": "Main Broker",
+            "sektor": "Technology",
+            "ryzyko": "Very high risk",
+            "portfelOrg": "",
+            "dataInvStart": "2023-06-15",
+            "okresInwestycji": "284"
+        },
+        "2": {
+            "tickerClear": "WSE_PKN",
+            "nazwa": "PKN ORLEN SA (PKN)",
+            "data": "2024-03-22",
+            "close": "58.50",
+            "zmianaDzienna": "-0.85",
+            "liczbaJednostek": "500",
+            "typ": "WSE shares",
+            "typOrg": "Akcje GPW",
+            "wartosc": "29250.00",
+            "udzial": "11.70",
+            "zmiana": "-3.50",
+            "cenaZakupu": "60.50",
+            "zysk": "-1000.00",
+            "kontoInvName": "GPW Account",
+            "sektor": "Energy",
+            "ryzyko": "Shares - high risk - level 2",
+            "portfelOrg": "",
+            "dataInvStart": "2023-09-01",
+            "okresInwestycji": "203"
+        },
+        "3": {
+            "tickerClear": "ETF_VWCE",
+            "nazwa": "Vanguard FTSE All-World (VWCE)",
+            "data": "2024-03-22",
+            "close": "120.40",
+            "zmianaDzienna": "0.30",
+            "liczbaJednostek": "1130",
+            "typ": "ETFs - international",
+            "typOrg": "ETF zagraniczne",
+            "wartosc": "136052.00",
+            "udzial": "54.42",
+            "zmiana": "5.20",
+            "cenaZakupu": "114.44",
+            "zysk": "6727.00",
+            "kontoInvName": "Main Broker",
+            "sektor": "Mixed",
+            "ryzyko": "High risk",
+            "portfelOrg": "",
+            "dataInvStart": "2022-01-10",
+            "okresInwestycji": "807"
+        }
+    },
+    "struktura": {
+        "NASDAQ shares": "85000.00",
+        "WSE shares": "29250.00",
+        "ETFs - international": "136052.00"
+    },
+    "strukturaKolor": {
+        "NASDAQ shares": "#4472C4",
+        "WSE shares": "#ED7D31",
+        "ETFs - international": "#A9D18E"
+    },
+    "strukturaWalory": {
+        "NASDAQ_AAPL": "34.00",
+        "WSE_PKN": "11.70",
+        "ETF_VWCE": "54.42"
+    },
+    "strukturaWaloryKolor": {
+        "NASDAQ_AAPL": "#4472C4",
+        "WSE_PKN": "#ED7D31",
+        "ETF_VWCE": "#A9D18E"
+    },
+    "wartoscWCzasie": {
+        "2022-01-10": "114440.00",
+        "2022-06-01": "108000.00",
+        "2023-01-02": "195000.00",
+        "2023-06-15": "210000.00",
+        "2023-09-01": "221500.00",
+        "2024-01-01": "238000.00",
+        "2024-03-01": "252000.00",
+        "2024-03-22": "250000.00"
+    },
+    "zyskWCzasie": {
+        "2022-01-10": "0.00",
+        "2022-06-01": "-6440.00",
+        "2023-01-02": "5560.00",
+        "2023-06-15": "10000.00",
+        "2023-09-01": "13500.00",
+        "2024-01-01": "18000.00",
+        "2024-03-01": "29560.00",
+        "2024-03-22": "27500.00"
+    },
+    "wkladWCzasie": {
+        "2022-01-10": "114440.00",
+        "2022-06-01": "114440.00",
+        "2023-01-02": "189440.00",
+        "2023-06-15": "200000.00",
+        "2023-09-01": "208000.00",
+        "2024-01-01": "220000.00",
+        "2024-03-01": "222440.00",
+        "2024-03-22": "222500.00"
+    },
+    "benchWCzasie": {
+        "2022-01-10": "0.00",
+        "2022-06-01": "-8.50",
+        "2023-01-02": "3.20",
+        "2023-06-15": "7.80",
+        "2023-09-01": "5.40",
+        "2024-01-01": "11.20",
+        "2024-03-01": "14.30",
+        "2024-03-22": "13.90"
+    },
+    "stopaZwrotuWCzasie": {
+        "2022-01-10": "0.00",
+        "2022-06-01": "-5.63",
+        "2023-01-02": "4.86",
+        "2023-06-15": "8.74",
+        "2023-09-01": "11.79",
+        "2024-01-01": "15.72",
+        "2024-03-01": "25.81",
+        "2024-03-22": "24.02"
+    },
+    "zmianaDzienna": {
+        "2024-03-22": "-0.83"
+    }
+}
