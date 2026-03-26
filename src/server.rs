@@ -73,11 +73,23 @@ impl MyfundServer {
         match self.client.fetch_portfolio(&params.name).await {
             Err(e) => format!("Error: {e}"),
             Ok(r) => {
+                let slim_tickers: Option<HashMap<String, serde_json::Value>> =
+                    r.tickers.map(|tickers| {
+                        tickers
+                            .into_iter()
+                            .map(|(id, t)| {
+                                let slim = json!({
+                                    "tickerClear": t.ticker_clear,
+                                    "nazwa": t.nazwa,
+                                    "liczbaJednostek": t.liczba_jednostek,
+                                });
+                                (id, slim)
+                            })
+                            .collect()
+                    });
                 let summary = json!({
                     "portfel": r.portfel,
-                    "tickers": r.tickers,
-                    "struktura": r.struktura,
-                    "strukturaWalory": r.struktura_walory,
+                    "tickers": slim_tickers,
                     "zmianaDzienna": r.zmiana_dzienna,
                 });
                 serde_json::to_string_pretty(&summary)
@@ -252,15 +264,38 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_portfolio_summary_contains_struktura() {
+    async fn test_get_portfolio_summary_no_struktura() {
         let (_, s) = make_server(FIXTURE_OK, 200).await;
         let result = s
             .get_portfolio_summary(Parameters(GetPortfolioSummaryParams {
                 name: "main".to_string(),
             }))
             .await;
-        assert!(result.contains("struktura"));
-        assert!(result.contains("NASDAQ shares"));
+        assert!(!result.contains("struktura"));
+        assert!(!result.contains("strukturaWalory"));
+    }
+
+    #[tokio::test]
+    async fn test_get_portfolio_summary_tickers_slim_fields() {
+        let (_, s) = make_server(FIXTURE_OK, 200).await;
+        let result = s
+            .get_portfolio_summary(Parameters(GetPortfolioSummaryParams {
+                name: "main".to_string(),
+            }))
+            .await;
+        let v: serde_json::Value = serde_json::from_str(&result).unwrap();
+        let tickers = v["tickers"].as_object().unwrap();
+        for ticker in tickers.values() {
+            let obj = ticker.as_object().unwrap();
+            assert!(obj.contains_key("tickerClear"));
+            assert!(obj.contains_key("nazwa"));
+            assert!(obj.contains_key("liczbaJednostek"));
+            // Ensure no extra fields leaked through
+            assert!(!obj.contains_key("wartosc"));
+            assert!(!obj.contains_key("zysk"));
+            assert!(!obj.contains_key("typ"));
+            assert!(!obj.contains_key("udzial"));
+        }
     }
 
     #[tokio::test]
