@@ -1,4 +1,8 @@
-use std::collections::HashMap;
+// Production code uses .expect() only for infallible operations (json!() macro output,
+// BTreeMap<&str,&str> serialization). Suppress the pedantic lint at file level.
+#![allow(clippy::expect_used)]
+
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use rmcp::handler::server::router::tool::ToolRouter;
@@ -27,6 +31,17 @@ impl MyfundServer {
     }
 }
 
+#[allow(clippy::enum_variant_names)]
+#[derive(Debug, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum SeriesName {
+    WartoscWCzasie,
+    ZyskWCzasie,
+    WkladWCzasie,
+    BenchWCzasie,
+    StopaZwrotuWCzasie,
+}
+
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct GetPortfolioSummaryParams {
     /// Name of the portfolio on myfund.pl (case-sensitive).
@@ -37,9 +52,8 @@ pub struct GetPortfolioSummaryParams {
 pub struct GetPortfolioTimeseriesParams {
     /// Name of the portfolio on myfund.pl (case-sensitive).
     pub name: String,
-    /// Which time-series to fetch. Valid values: wartoscWCzasie, zyskWCzasie,
-    /// wkladWCzasie, benchWCzasie, stopaZwrotuWCzasie
-    pub series: String,
+    /// Which time-series to fetch.
+    pub series: SeriesName,
     /// Optional start date filter (YYYY-MM-DD, inclusive).
     pub from: Option<String>,
     /// Optional end date filter (YYYY-MM-DD, inclusive).
@@ -48,7 +62,6 @@ pub struct GetPortfolioTimeseriesParams {
 
 #[tool_router]
 impl MyfundServer {
-    /// List all configured myfund.pl portfolio names.
     #[tool(description = "List all configured myfund.pl portfolio names.")]
     async fn list_portfolios(&self) -> String {
         if self.portfolios.is_empty() {
@@ -60,11 +73,8 @@ impl MyfundServer {
         }
     }
 
-    /// Fetch portfolio totals, all ticker positions, asset structure, and today's
-    /// daily change. Time-series data is intentionally excluded to keep the
-    /// response size manageable -- use get_portfolio_timeseries for that.
     #[tool(
-        description = "Fetch portfolio summary: totals, all ticker positions, asset structure breakdown, and today's daily change. Does not include time-series data."
+        description = "Fetch portfolio summary: totals, key ticker fields (symbol, name, unit count), asset structure breakdown, and today's daily change. Does not include time-series data."
     )]
     async fn get_portfolio_summary(
         &self,
@@ -73,7 +83,7 @@ impl MyfundServer {
         match self.client.fetch_portfolio(&params.name).await {
             Err(e) => format!("Error: {e}"),
             Ok(r) => {
-                let slim_tickers: Option<HashMap<String, serde_json::Value>> =
+                let slim_tickers: Option<std::collections::HashMap<String, serde_json::Value>> =
                     r.tickers.map(|tickers| {
                         tickers
                             .into_iter()
@@ -90,18 +100,17 @@ impl MyfundServer {
                 let summary = json!({
                     "portfel": r.portfel,
                     "tickers": slim_tickers,
+                    "struktura": r.struktura,
                     "zmianaDzienna": r.zmiana_dzienna,
                 });
                 serde_json::to_string_pretty(&summary)
-                    .unwrap_or_else(|e| format!("Serialization error: {e}"))
+                    .expect("json!() macro output is always serializable")
             }
         }
     }
 
-    /// Fetch a single named time-series for a portfolio, with optional date-range
-    /// filtering. Use get_portfolio_summary first to understand the portfolio.
     #[tool(
-        description = "Fetch a time-series for a portfolio. Valid series names: wartoscWCzasie (portfolio value), zyskWCzasie (profit), wkladWCzasie (contributions), benchWCzasie (benchmark return), stopaZwrotuWCzasie (rate of return). Optionally filter by from/to dates (YYYY-MM-DD)."
+        description = "Fetch a time-series for a portfolio. Valid series names: wartoscWCzasie (portfolio value), zykWCzasie (profit), wkladWCzasie (contributions), benchWCzasie (benchmark return), stopaZwrotuWCzasie (rate of return). Optionally filter by from/to dates (YYYY-MM-DD)."
     )]
     async fn get_portfolio_timeseries(
         &self,
@@ -112,49 +121,29 @@ impl MyfundServer {
             Ok(r) => r,
         };
 
-        let series: Option<&HashMap<String, String>> = match params.series.as_str() {
-            "wartoscWCzasie" => response.wartosc_w_czasie.as_ref(),
-            "zyskWCzasie" => response.zysk_w_czasie.as_ref(),
-            "wkladWCzasie" => response.wklad_w_czasie.as_ref(),
-            "benchWCzasie" => response.bench_w_czasie.as_ref(),
-            "stopaZwrotuWCzasie" => response.stopa_zwrotu_w_czasie.as_ref(),
-            other => {
-                return format!(
-                    "Unknown series '{}'. Valid values: wartoscWCzasie, zyskWCzasie, \
-                     wkladWCzasie, benchWCzasie, stopaZwrotuWCzasie",
-                    other
-                )
-            }
+        let series = match params.series {
+            SeriesName::WartoscWCzasie => response.wartosc_w_czasie.as_ref(),
+            SeriesName::ZyskWCzasie => response.zysk_w_czasie.as_ref(),
+            SeriesName::WkladWCzasie => response.wklad_w_czasie.as_ref(),
+            SeriesName::BenchWCzasie => response.bench_w_czasie.as_ref(),
+            SeriesName::StopaZwrotuWCzasie => response.stopa_zwrotu_w_czasie.as_ref(),
         };
 
-        let Some(series) = series else {
+                let Some(series) = series else {
             return "No data available for this series.".to_string();
         };
 
-        let mut filtered: Vec<(&String, &String)> = series
+        let map: BTreeMap<&str, &str> = series
             .iter()
             .filter(|(date, _)| {
-                if let Some(from) = &params.from {
-                    if date.as_str() < from.as_str() {
-                        return false;
-                    }
-                }
-                if let Some(to) = &params.to {
-                    if date.as_str() > to.as_str() {
-                        return false;
-                    }
-                }
-                true
+                params.from.as_ref().is_none_or(|f| date.as_str() >= f.as_str())
+                    && params.to.as_ref().is_none_or(|t| date.as_str() <= t.as_str())
             })
+            .map(|(d, v)| (d.as_str(), v.as_str()))
             .collect();
 
-        filtered.sort_by_key(|(date, _)| *date);
-
-        let map: HashMap<&str, &str> =
-            filtered.iter().map(|(d, v)| (d.as_str(), v.as_str())).collect();
-
         serde_json::to_string_pretty(&map)
-            .unwrap_or_else(|e| format!("Serialization error: {e}"))
+            .expect("BTreeMap<&str, &str> serialization is infallible")
     }
 }
 
@@ -181,6 +170,7 @@ impl ServerHandler for MyfundServer {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use wiremock::matchers::{method, path};
@@ -210,7 +200,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_list_portfolios_configured() {
-        let (_, s) = make_server(FIXTURE_OK, 200).await;
+        let (_mock, s) = make_server(FIXTURE_OK, 200).await;
         let result = s.list_portfolios().await;
         assert!(result.contains("main"));
         assert!(result.contains("crypto"));
@@ -227,7 +217,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_portfolio_summary_contains_portfel() {
-        let (_, s) = make_server(FIXTURE_OK, 200).await;
+        let (_mock, s) = make_server(FIXTURE_OK, 200).await;
         let result = s
             .get_portfolio_summary(Parameters(GetPortfolioSummaryParams {
                 name: "main".to_string(),
@@ -239,7 +229,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_portfolio_summary_contains_tickers() {
-        let (_, s) = make_server(FIXTURE_OK, 200).await;
+        let (_mock, s) = make_server(FIXTURE_OK, 200).await;
         let result = s
             .get_portfolio_summary(Parameters(GetPortfolioSummaryParams {
                 name: "main".to_string(),
@@ -252,7 +242,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_portfolio_summary_no_timeseries() {
-        let (_, s) = make_server(FIXTURE_OK, 200).await;
+        let (_mock, s) = make_server(FIXTURE_OK, 200).await;
         let result = s
             .get_portfolio_summary(Parameters(GetPortfolioSummaryParams {
                 name: "main".to_string(),
@@ -264,20 +254,21 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_portfolio_summary_no_struktura() {
-        let (_, s) = make_server(FIXTURE_OK, 200).await;
+    async fn test_get_portfolio_summary_contains_struktura() {
+        let (_mock, s) = make_server(FIXTURE_OK, 200).await;
         let result = s
             .get_portfolio_summary(Parameters(GetPortfolioSummaryParams {
                 name: "main".to_string(),
             }))
             .await;
-        assert!(!result.contains("struktura"));
+        assert!(result.contains("struktura"));
+        assert!(result.contains("NASDAQ shares"));
         assert!(!result.contains("strukturaWalory"));
     }
 
     #[tokio::test]
     async fn test_get_portfolio_summary_tickers_slim_fields() {
-        let (_, s) = make_server(FIXTURE_OK, 200).await;
+        let (_mock, s) = make_server(FIXTURE_OK, 200).await;
         let result = s
             .get_portfolio_summary(Parameters(GetPortfolioSummaryParams {
                 name: "main".to_string(),
@@ -300,7 +291,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_portfolio_summary_propagates_api_error() {
-        let (_, s) = make_server(FIXTURE_ERR, 200).await;
+        let (_mock, s) = make_server(FIXTURE_ERR, 200).await;
         let result = s
             .get_portfolio_summary(Parameters(GetPortfolioSummaryParams {
                 name: "bad".to_string(),
@@ -311,31 +302,31 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_portfolio_timeseries_all_entries() {
-        let (_, s) = make_server(FIXTURE_OK, 200).await;
+        let (_mock, s) = make_server(FIXTURE_OK, 200).await;
         let result = s
             .get_portfolio_timeseries(Parameters(GetPortfolioTimeseriesParams {
                 name: "main".to_string(),
-                series: "wartoscWCzasie".to_string(),
+                series: SeriesName::WartoscWCzasie,
                 from: None,
                 to: None,
             }))
             .await;
-        let map: HashMap<String, String> = serde_json::from_str(&result).unwrap();
+        let map: std::collections::BTreeMap<String, String> = serde_json::from_str(&result).unwrap();
         assert_eq!(map.len(), 8);
     }
 
     #[tokio::test]
     async fn test_get_portfolio_timeseries_date_filter_from() {
-        let (_, s) = make_server(FIXTURE_OK, 200).await;
+        let (_mock, s) = make_server(FIXTURE_OK, 200).await;
         let result = s
             .get_portfolio_timeseries(Parameters(GetPortfolioTimeseriesParams {
                 name: "main".to_string(),
-                series: "wartoscWCzasie".to_string(),
+                series: SeriesName::WartoscWCzasie,
                 from: Some("2023-06-15".to_string()),
                 to: None,
             }))
             .await;
-        let map: HashMap<String, String> = serde_json::from_str(&result).unwrap();
+        let map: std::collections::BTreeMap<String, String> = serde_json::from_str(&result).unwrap();
         // 2023-06-15, 2023-09-01, 2024-01-01, 2024-03-01, 2024-03-22 = 5
         assert_eq!(map.len(), 5);
         assert!(map.contains_key("2023-06-15"));
@@ -344,47 +335,32 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_portfolio_timeseries_date_filter_range() {
-        let (_, s) = make_server(FIXTURE_OK, 200).await;
+        let (_mock, s) = make_server(FIXTURE_OK, 200).await;
         let result = s
             .get_portfolio_timeseries(Parameters(GetPortfolioTimeseriesParams {
                 name: "main".to_string(),
-                series: "wartoscWCzasie".to_string(),
+                series: SeriesName::WartoscWCzasie,
                 from: Some("2023-01-02".to_string()),
                 to: Some("2024-01-01".to_string()),
             }))
             .await;
-        let map: HashMap<String, String> = serde_json::from_str(&result).unwrap();
+        let map: std::collections::BTreeMap<String, String> = serde_json::from_str(&result).unwrap();
         // 2023-01-02, 2023-06-15, 2023-09-01, 2024-01-01 = 4
         assert_eq!(map.len(), 4);
     }
 
     #[tokio::test]
-    async fn test_get_portfolio_timeseries_invalid_series() {
-        let (_, s) = make_server(FIXTURE_OK, 200).await;
-        let result = s
-            .get_portfolio_timeseries(Parameters(GetPortfolioTimeseriesParams {
-                name: "main".to_string(),
-                series: "notASeries".to_string(),
-                from: None,
-                to: None,
-            }))
-            .await;
-        assert!(result.contains("Unknown series"));
-        assert!(result.contains("notASeries"));
-    }
-
-    #[tokio::test]
     async fn test_get_portfolio_timeseries_empty_range() {
-        let (_, s) = make_server(FIXTURE_OK, 200).await;
+        let (_mock, s) = make_server(FIXTURE_OK, 200).await;
         let result = s
             .get_portfolio_timeseries(Parameters(GetPortfolioTimeseriesParams {
                 name: "main".to_string(),
-                series: "wartoscWCzasie".to_string(),
+                series: SeriesName::WartoscWCzasie,
                 from: Some("2025-01-01".to_string()),
                 to: Some("2025-12-31".to_string()),
             }))
             .await;
-        let map: HashMap<String, String> = serde_json::from_str(&result).unwrap();
+        let map: std::collections::BTreeMap<String, String> = serde_json::from_str(&result).unwrap();
         assert!(map.is_empty());
     }
 }

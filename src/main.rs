@@ -21,13 +21,16 @@ async fn main() -> anyhow::Result<()> {
         )
         .init();
 
-    let api_key = env::var("MYFUND_API_KEY").unwrap_or_else(|_| {
-        eprintln!(
-            "Error: MYFUND_API_KEY environment variable is not set.\n\
-             Get your API key from myfund.pl: menu → Account → Account Settings → API Key"
-        );
-        std::process::exit(1);
-    });
+    let api_key = match env::var("MYFUND_API_KEY") {
+        Ok(key) => key,
+        Err(_) => {
+            eprintln!(
+                "Error: MYFUND_API_KEY environment variable is not set.\n\
+                 Get your API key from myfund.pl: menu → Account → Account Settings → API Key"
+            );
+            return Err(anyhow::anyhow!("MYFUND_API_KEY environment variable is not set"));
+        }
+    };
 
     let portfolios: Vec<String> = env::var("MYFUND_PORTFOLIOS")
         .unwrap_or_default()

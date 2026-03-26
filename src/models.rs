@@ -51,13 +51,14 @@ pub struct PortfolioSummary {
 }
 
 /// A single position (ticker) in the portfolio. All fields are strings in the API.
+#[allow(clippy::struct_field_names)]
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Ticker {
     pub ticker_clear: Option<String>,
     pub nazwa: Option<String>,
     pub data: Option<String>,
-    pub close: Option<Value>,
+    pub close: Option<String>,
     #[serde(rename = "zmianaDzienna")]
     pub zmiana_dzienna: Option<String>,
     pub liczba_jednostek: Option<String>,
@@ -86,6 +87,7 @@ pub struct PortfolioResponse {
     /// Keys are numeric string IDs assigned by myfund.pl
     pub tickers: Option<HashMap<String, Ticker>>,
     pub struktura: Option<HashMap<String, Value>>,
+    #[allow(dead_code)]
     pub struktura_walory: Option<HashMap<String, Value>>,
     #[serde(rename = "zyskWCzasie")]
     pub zysk_w_czasie: Option<TimeSeries>,
@@ -108,6 +110,7 @@ impl PortfolioResponse {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used, clippy::unnecessary_map_or)]
 mod tests {
     use super::*;
 
