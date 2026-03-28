@@ -43,7 +43,10 @@ async fn main() -> anyhow::Result<()> {
     let client = MyfundClient::new(api_key)?;
     let server = MyfundServer::new(client, portfolios);
 
-    tracing::info!("myfund-mcp server starting (stdio transport)");
+    tracing::info!(
+        "myfund-mcp server starting v{} (stdio transport)",
+        env!("CARGO_PKG_VERSION")
+    );
 
     let transport = rmcp::transport::io::stdio();
     let running: RunningService<RoleServer, _> = server.serve(transport).await?;
