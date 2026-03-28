@@ -78,7 +78,7 @@ pub struct Ticker {
     pub okres_inwestycji: Option<Value>,
 }
 
-pub type TimeSeries = HashMap<String, String>;
+pub type TimeSeries = HashMap<String, Value>;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -204,7 +204,7 @@ mod tests {
         let r = parse_ok();
         let ts = r.wartosc_w_czasie.as_ref().unwrap();
         assert_eq!(ts.len(), 8);
-        assert_eq!(ts.get("2024-03-22").unwrap(), "250000.00");
+        assert_eq!(ts.get("2024-03-22").unwrap().as_str().unwrap(), "250000.00");
     }
 
     #[test]
@@ -222,6 +222,6 @@ mod tests {
         let r = parse_ok();
         let zd = r.zmiana_dzienna.as_ref().unwrap();
         assert_eq!(zd.len(), 1);
-        assert_eq!(zd.get("2024-03-22").unwrap(), "-0.83");
+        assert_eq!(zd.get("2024-03-22").unwrap().as_str().unwrap(), "-0.83");
     }
 }

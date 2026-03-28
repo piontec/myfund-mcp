@@ -11,7 +11,7 @@ use rmcp::model::{Implementation, ProtocolVersion, ServerCapabilities, ServerInf
 use rmcp::{tool, tool_handler, tool_router, ServerHandler};
 use schemars::JsonSchema;
 use serde::Deserialize;
-use serde_json::json;
+use serde_json::{json, Value};
 
 use crate::myfund::MyfundClient;
 
@@ -133,13 +133,13 @@ impl MyfundServer {
             return "No data available for this series.".to_string();
         };
 
-        let map: BTreeMap<&str, &str> = series
+        let map: BTreeMap<&str, &Value> = series
             .iter()
             .filter(|(date, _)| {
                 params.from.as_ref().is_none_or(|f| date.as_str() >= f.as_str())
                     && params.to.as_ref().is_none_or(|t| date.as_str() <= t.as_str())
             })
-            .map(|(d, v)| (d.as_str(), v.as_str()))
+            .map(|(d, v)| (d.as_str(), v))
             .collect();
 
         serde_json::to_string_pretty(&map)
@@ -326,7 +326,7 @@ mod tests {
                 to: None,
             }))
             .await;
-        let map: std::collections::BTreeMap<String, String> = serde_json::from_str(&result).unwrap();
+        let map: std::collections::BTreeMap<String, serde_json::Value> = serde_json::from_str(&result).unwrap();
         // 2023-06-15, 2023-09-01, 2024-01-01, 2024-03-01, 2024-03-22 = 5
         assert_eq!(map.len(), 5);
         assert!(map.contains_key("2023-06-15"));
@@ -344,7 +344,7 @@ mod tests {
                 to: Some("2024-01-01".to_string()),
             }))
             .await;
-        let map: std::collections::BTreeMap<String, String> = serde_json::from_str(&result).unwrap();
+        let map: std::collections::BTreeMap<String, serde_json::Value> = serde_json::from_str(&result).unwrap();
         // 2023-01-02, 2023-06-15, 2023-09-01, 2024-01-01 = 4
         assert_eq!(map.len(), 4);
     }
@@ -360,7 +360,7 @@ mod tests {
                 to: Some("2025-12-31".to_string()),
             }))
             .await;
-        let map: std::collections::BTreeMap<String, String> = serde_json::from_str(&result).unwrap();
+        let map: std::collections::BTreeMap<String, serde_json::Value> = serde_json::from_str(&result).unwrap();
         assert!(map.is_empty());
     }
 }
