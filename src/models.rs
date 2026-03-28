@@ -50,7 +50,8 @@ pub struct PortfolioSummary {
     pub zmiana_r_d_d: Option<String>,
 }
 
-/// A single position (ticker) in the portfolio. All fields are strings in the API.
+/// A single position (ticker) in the portfolio.
+/// Numeric fields use Value because the real API returns them as either strings or floats.
 #[allow(clippy::struct_field_names)]
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -58,17 +59,17 @@ pub struct Ticker {
     pub ticker_clear: Option<String>,
     pub nazwa: Option<String>,
     pub data: Option<String>,
-    pub close: Option<String>,
+    pub close: Option<Value>,
     #[serde(rename = "zmianaDzienna")]
-    pub zmiana_dzienna: Option<String>,
-    pub liczba_jednostek: Option<String>,
+    pub zmiana_dzienna: Option<Value>,
+    pub liczba_jednostek: Option<Value>,
     pub typ: Option<String>,
     pub typ_org: Option<String>,
-    pub wartosc: Option<String>,
-    pub udzial: Option<String>,
-    pub zmiana: Option<String>,
-    pub cena_zakupu: Option<String>,
-    pub zysk: Option<String>,
+    pub wartosc: Option<Value>,
+    pub udzial: Option<Value>,
+    pub zmiana: Option<Value>,
+    pub cena_zakupu: Option<Value>,
+    pub zysk: Option<Value>,
     pub konto_inv_name: Option<String>,
     pub sektor: Option<String>,
     pub ryzyko: Option<String>,
@@ -173,8 +174,8 @@ mod tests {
         let r = parse_ok();
         let ticker = r.tickers.as_ref().unwrap().get("1").unwrap();
         assert_eq!(ticker.ticker_clear.as_deref().unwrap(), "NASDAQ_AAPL");
-        assert_eq!(ticker.wartosc.as_deref().unwrap(), "85000.00");
-        assert_eq!(ticker.zysk.as_deref().unwrap(), "1800.00");
+        assert_eq!(ticker.wartosc.as_ref().unwrap().as_str().unwrap(), "85000.00");
+        assert_eq!(ticker.zysk.as_ref().unwrap().as_str().unwrap(), "1800.00");
         assert_eq!(ticker.typ.as_deref().unwrap(), "NASDAQ shares");
     }
 

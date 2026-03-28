@@ -28,7 +28,7 @@ impl MyfundClient {
     }
 
     pub async fn fetch_portfolio(&self, name: &str) -> Result<PortfolioResponse> {
-        let response = self
+        let bytes = self
             .http
             .get(&self.base_url)
             .query(&[
@@ -39,8 +39,14 @@ impl MyfundClient {
             .send()
             .await?
             .error_for_status()?
-            .json::<PortfolioResponse>()
+            .bytes()
             .await?;
+
+        let response = serde_json::from_slice::<PortfolioResponse>(&bytes).map_err(|e| {
+            let snippet = String::from_utf8_lossy(&bytes[..bytes.len().min(2000)]);
+            tracing::error!("Failed to deserialize myfund.pl response: {e}\nBody (first 2000 bytes): {snippet}");
+            anyhow::anyhow!("error decoding response body: {e}")
+        })?;
 
         if response.is_error() {
             return Err(anyhow!("myfund.pl API error: {}", response.status.text));
